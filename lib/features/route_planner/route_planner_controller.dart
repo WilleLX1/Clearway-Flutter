@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../models/clearway_models.dart';
-import '../../services/clearway_api.dart';
+import '../../services/clearway_repository.dart';
+import '../../services/local_clearway_repository.dart';
 
 enum PointKind { origin, destination }
 
@@ -15,7 +16,7 @@ class RoutePlannerController extends ChangeNotifier {
   }
 
   factory RoutePlannerController.standard() =>
-      RoutePlannerController(ClearwayApi());
+      RoutePlannerController(LocalClearwayRepository());
 
   final ClearwayRepository _repository;
   Timer? _originSearchTimer;
@@ -60,8 +61,7 @@ class RoutePlannerController extends ChangeNotifier {
     try {
       meta = await _repository.getMeta();
     } catch (_) {
-      status =
-          'Cannot reach the Clearway server. Start the backend or configure its address.';
+      status = 'Could not load the bundled offline routing data.';
     } finally {
       initializing = false;
       _notify();
@@ -188,11 +188,12 @@ class RoutePlannerController extends ChangeNotifier {
       }
       hint = 'Click a route or an ETA on the map to switch between them.';
       _updateStatus();
-    } catch (_) {
+    } catch (error) {
       if (request != _routeRequest) return;
       routes = const [];
-      status =
-          'No route found — try points closer to roads inside the supported region.';
+      status = error is NoRouteException
+          ? 'No route found — try points closer to roads inside the supported region.'
+          : 'Local routing failed. Clear the route and try again.';
     } finally {
       if (request == _routeRequest) {
         findingRoutes = false;
@@ -273,9 +274,6 @@ class RoutePlannerController extends ChangeNotifier {
     _disposed = true;
     _originSearchTimer?.cancel();
     _destinationSearchTimer?.cancel();
-    if (_repository is ClearwayApi) {
-      _repository.close();
-    }
     super.dispose();
   }
 }

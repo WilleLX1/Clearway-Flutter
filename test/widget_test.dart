@@ -1,7 +1,7 @@
 import 'package:clearway/app.dart';
 import 'package:clearway/features/route_planner/route_planner_controller.dart';
 import 'package:clearway/models/clearway_models.dart';
-import 'package:clearway/services/clearway_api.dart';
+import 'package:clearway/services/clearway_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeRepository implements ClearwayRepository {
