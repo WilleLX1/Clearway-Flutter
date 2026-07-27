@@ -1,11 +1,11 @@
 {
-    "name": "clearway",
-    "short_name": "clearway",
+    "name": "Clearway",
+    "short_name": "Clearway",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F8F7F4",
+    "theme_color": "#FFFFFF",
+    "description": "Signal-aware routing that helps you avoid traffic lights, stops, and crossings.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
