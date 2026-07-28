@@ -113,6 +113,7 @@ class ClearwayRoute {
     required this.profile,
     required this.stats,
     required this.coordinates,
+    this.instructions = const [],
   });
 
   factory ClearwayRoute.fromJson(Map<String, dynamic> json) {
@@ -135,6 +136,63 @@ class ClearwayRoute {
   final String profile;
   final RouteStats stats;
   final List<ClearwayPoint> coordinates;
+  final List<RouteInstruction> instructions;
+}
+
+enum ManeuverType {
+  depart,
+  continueStraight,
+  slightLeft,
+  turnLeft,
+  sharpLeft,
+  slightRight,
+  turnRight,
+  sharpRight,
+  uTurn,
+  enterRoundabout,
+  exitRoundabout,
+  arrive,
+}
+
+class RouteInstruction {
+  const RouteInstruction({
+    required this.type,
+    required this.point,
+    required this.distanceFromStartM,
+    this.roadName = '',
+    this.exitNumber,
+  });
+
+  final ManeuverType type;
+  final ClearwayPoint point;
+  final double distanceFromStartM;
+  final String roadName;
+  final int? exitNumber;
+
+  String get title {
+    final road = roadName.trim();
+    final suffix = road.isEmpty ? '' : ' onto $road';
+    return switch (type) {
+      ManeuverType.depart =>
+        road.isEmpty ? 'Start driving' : 'Head along $road',
+      ManeuverType.continueStraight =>
+        road.isEmpty ? 'Continue straight' : 'Continue on $road',
+      ManeuverType.slightLeft => 'Keep slightly left$suffix',
+      ManeuverType.turnLeft => 'Turn left$suffix',
+      ManeuverType.sharpLeft => 'Make a sharp left$suffix',
+      ManeuverType.slightRight => 'Keep slightly right$suffix',
+      ManeuverType.turnRight => 'Turn right$suffix',
+      ManeuverType.sharpRight => 'Make a sharp right$suffix',
+      ManeuverType.uTurn => 'Make a U-turn$suffix',
+      ManeuverType.enterRoundabout =>
+        exitNumber == null
+            ? 'Enter the roundabout'
+            : 'At the roundabout, take exit $exitNumber$suffix',
+      ManeuverType.exitRoundabout =>
+        road.isEmpty ? 'Exit the roundabout' : 'Exit onto $road',
+      ManeuverType.arrive => 'You have arrived',
+    };
+  }
 }
 
 String formatDistance(double metres) {

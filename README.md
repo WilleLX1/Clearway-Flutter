@@ -15,6 +15,9 @@ needed at runtime.
 - Day and departure-time handling for restricted roads
 - Offline street-name search for the bundled Helsingborg region
 - Interactive OpenStreetMap, route lines, pins, statistics, and ETA callouts
+- Current-location display and high-accuracy foreground location tracking
+- On-device turn-by-turn navigation with road-name maneuvers and live ETA
+- Follow/recenter controls, route progress, and automatic off-route rerouting
 - Responsive docked desktop panel and draggable mobile bottom sheet
 
 The routing engine and street search are offline. The default OpenStreetMap
@@ -41,6 +44,15 @@ flutter run -d <simulator-id>
 ```
 
 No backend process or API configuration is required.
+
+To test navigation, start the app, choose a destination, select a route, and
+press **Go**. Accept the location prompt. In Simulator, choose **Features >
+Location > Custom Location** and enter a coordinate inside Helsingborg (for
+example latitude `56.04905`, longitude `12.69044`). Change the simulated
+location along the route to exercise maneuver advancement and rerouting.
+
+Clearway requests location only while the app is in use. Background navigation
+is intentionally not enabled.
 
 ## Build an IPA
 
@@ -85,3 +97,7 @@ flutter build web
 Before distributing the app, configure a production map-tile provider or
 self-hosted tile package that meets the expected traffic volume and
 attribution requirements.
+
+On Web, live location requires HTTPS or `localhost`, and the browser will show
+its own permission prompt. Desktop devices without a GPS may return a
+network-derived position with lower accuracy.

@@ -33,6 +33,7 @@ class RoutingEdge {
     required this.arrivalBearing,
     required this.ruleIndex,
     required this.coordinates,
+    required this.roadName,
   });
 
   final int tail;
@@ -44,6 +45,7 @@ class RoutingEdge {
   final double arrivalBearing;
   final int ruleIndex;
   final List<ClearwayPoint> coordinates;
+  final String roadName;
 }
 
 class AccessWindow {
@@ -165,6 +167,7 @@ class RoutingGraph {
             arrivalBearing: (values[6] as num).toDouble(),
             ruleIndex: values[7] as int,
             coordinates: coordinates,
+            roadName: values.length > 9 ? values[9] as String : '',
           );
         })
         .toList(growable: false);

@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import '../../models/clearway_models.dart';
 import '../../services/clearway_repository.dart';
 import '../../services/local_clearway_repository.dart';
+import '../../services/location_service.dart';
 
 enum PointKind { origin, destination }
 
 class RoutePlannerController extends ChangeNotifier {
-  RoutePlannerController(this._repository) {
+  RoutePlannerController(this._repository, {LocationService? locationService})
+    : _locationService = locationService ?? GeolocatorLocationService() {
     final now = DateTime.now();
     departureTime = TimeOfDay(hour: now.hour, minute: now.minute);
     weekday = now.weekday - 1;
@@ -19,6 +21,8 @@ class RoutePlannerController extends ChangeNotifier {
       RoutePlannerController(LocalClearwayRepository());
 
   final ClearwayRepository _repository;
+  final LocationService _locationService;
+  StreamSubscription<LocationSample>? _locationSubscription;
   Timer? _originSearchTimer;
   Timer? _destinationSearchTimer;
   int _routeRequest = 0;
@@ -39,6 +43,9 @@ class RoutePlannerController extends ChangeNotifier {
   bool findingRoutes = false;
   bool searchingOrigin = false;
   bool searchingDestination = false;
+  bool locating = false;
+  LocationSample? currentLocation;
+  String? locationError;
   String hint =
       'Click the map for your starting point, then again for the destination.';
   String status = 'Set a start and destination to compare routes.';
@@ -66,6 +73,81 @@ class RoutePlannerController extends ChangeNotifier {
       initializing = false;
       _notify();
     }
+  }
+
+  Future<LocationSample?> locate({bool useAsOrigin = false}) async {
+    locating = true;
+    locationError = null;
+    _notify();
+    try {
+      final sample = await _locationService.current();
+      currentLocation = sample;
+      if (useAsOrigin) {
+        origin = sample.point;
+        originResults = const [];
+      }
+      await _startLocationStream();
+      if (useAsOrigin) await computeRoutes();
+      return sample;
+    } catch (error) {
+      locationError = error is LocationFailure
+          ? error.message
+          : 'Could not determine your current location.';
+      _notify();
+      return null;
+    } finally {
+      locating = false;
+      _notify();
+    }
+  }
+
+  Future<ClearwayRoute?> prepareNavigation() async {
+    final sample = await locate();
+    if (sample == null) return null;
+    if (destination == null) {
+      locationError = 'Choose a destination before starting navigation.';
+      _notify();
+      return null;
+    }
+    final bounds = meta?.bounds;
+    if (bounds != null &&
+        (sample.point.lon < bounds[0] ||
+            sample.point.lat < bounds[1] ||
+            sample.point.lon > bounds[2] ||
+            sample.point.lat > bounds[3])) {
+      locationError =
+          'Your current location is outside the bundled Helsingborg routing region.';
+      _notify();
+      return null;
+    }
+    origin = sample.point;
+    originResults = const [];
+    await computeRoutes();
+    return selectedRoute;
+  }
+
+  Future<ClearwayRoute?> rerouteFrom(ClearwayPoint point) async {
+    origin = point;
+    await computeRoutes();
+    return selectedRoute;
+  }
+
+  Future<void> _startLocationStream() async {
+    if (_locationSubscription != null) return;
+    _locationSubscription = _locationService.watch().listen(
+      (sample) {
+        currentLocation = sample;
+        locationError = null;
+        _notify();
+      },
+      onError: (Object error) {
+        locationError = error is LocationFailure
+            ? error.message
+            : 'Live location updates stopped.';
+        _notify();
+      },
+      onDone: () => _locationSubscription = null,
+    );
   }
 
   Future<void> setPoint(PointKind kind, ClearwayPoint point) async {
@@ -274,6 +356,7 @@ class RoutePlannerController extends ChangeNotifier {
     _disposed = true;
     _originSearchTimer?.cancel();
     _destinationSearchTimer?.cancel();
+    _locationSubscription?.cancel();
     super.dispose();
   }
 }

@@ -247,7 +247,82 @@ class LocalRoutingEngine {
         restrictedSegments: restrictedSegments,
       ),
       coordinates: coordinates,
+      instructions: _instructions(edgeIds, distance),
     );
+  }
+
+  List<RouteInstruction> _instructions(
+    List<int> edgeIds,
+    double totalDistance,
+  ) {
+    if (edgeIds.isEmpty) return const [];
+    final result = <RouteInstruction>[];
+    final first = graph.edges[edgeIds.first];
+    result.add(
+      RouteInstruction(
+        type: ManeuverType.depart,
+        point: first.coordinates.first,
+        distanceFromStartM: 0,
+        roadName: first.roadName,
+      ),
+    );
+
+    var travelled = 0.0;
+    for (var index = 0; index + 1 < edgeIds.length; index++) {
+      final incoming = graph.edges[edgeIds[index]];
+      final outgoing = graph.edges[edgeIds[index + 1]];
+      travelled += incoming.length;
+      final maneuver = _maneuverFor(incoming, outgoing);
+      if (maneuver == null) continue;
+      result.add(
+        RouteInstruction(
+          type: maneuver,
+          point: outgoing.coordinates.first,
+          distanceFromStartM: travelled,
+          roadName: outgoing.roadName,
+        ),
+      );
+    }
+
+    final last = graph.edges[edgeIds.last];
+    result.add(
+      RouteInstruction(
+        type: ManeuverType.arrive,
+        point: last.coordinates.last,
+        distanceFromStartM: totalDistance,
+        roadName: last.roadName,
+      ),
+    );
+    return result;
+  }
+
+  ManeuverType? _maneuverFor(RoutingEdge incoming, RoutingEdge outgoing) {
+    if (outgoing.isRoundabout && !incoming.isRoundabout) {
+      return ManeuverType.enterRoundabout;
+    }
+    if (!outgoing.isRoundabout && incoming.isRoundabout) {
+      return ManeuverType.exitRoundabout;
+    }
+    if (incoming.isRoundabout && outgoing.isRoundabout) return null;
+
+    final delta = turnDelta(incoming.arrivalBearing, outgoing.departureBearing);
+    final absolute = delta.abs();
+    if (absolute >= 155) return ManeuverType.uTurn;
+    if (absolute <= 35) {
+      final from = incoming.roadName.trim().toLowerCase();
+      final to = outgoing.roadName.trim().toLowerCase();
+      return from.isNotEmpty && to.isNotEmpty && from != to
+          ? ManeuverType.continueStraight
+          : null;
+    }
+    if (delta < 0) {
+      if (absolute < 70) return ManeuverType.slightLeft;
+      if (absolute <= 125) return ManeuverType.turnLeft;
+      return ManeuverType.sharpLeft;
+    }
+    if (absolute < 70) return ManeuverType.slightRight;
+    if (absolute <= 125) return ManeuverType.turnRight;
+    return ManeuverType.sharpRight;
   }
 
   double _roundOne(double value) => (value * 10).round() / 10;

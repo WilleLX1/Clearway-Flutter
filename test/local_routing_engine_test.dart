@@ -29,6 +29,10 @@ void main() {
     expect(engine.graph.edges, hasLength(14136));
     expect(engine.graph.streets.length, greaterThan(1500));
     expect(engine.graph.rules, hasLength(1));
+    expect(
+      engine.graph.edges.where((edge) => edge.roadName.isNotEmpty).length,
+      greaterThan(1000),
+    );
   });
 
   test('local street search works without a geocoding server', () {
@@ -123,8 +127,16 @@ void main() {
           minute: routeCase['minute'] as int,
         );
         expect(route, isNotNull);
+        expect(route!.instructions.first.type, ManeuverType.depart);
+        expect(route.instructions.last.type, ManeuverType.arrive);
+        expect(
+          route.instructions.any(
+            (instruction) => instruction.roadName.isNotEmpty,
+          ),
+          isTrue,
+        );
         _expectStats(
-          route!.stats,
+          route.stats,
           expected['stats'] as Map<String, dynamic>,
           '${routeCase['name']} $profile',
         );

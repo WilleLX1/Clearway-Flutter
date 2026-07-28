@@ -12,6 +12,8 @@ class PlannerPanel extends StatelessWidget {
     required this.originText,
     required this.destinationText,
     required this.desktop,
+    required this.onGo,
+    required this.startingNavigation,
     this.scrollController,
   });
 
@@ -19,6 +21,8 @@ class PlannerPanel extends StatelessWidget {
   final TextEditingController originText;
   final TextEditingController destinationText;
   final bool desktop;
+  final VoidCallback onGo;
+  final bool startingNavigation;
   final ScrollController? scrollController;
 
   @override
@@ -81,6 +85,30 @@ class PlannerPanel extends StatelessWidget {
             ? (controller.meta?.baselineLabel ?? 'Fastest')
             : 'Clearway',
         onTap: () => controller.selectProfile(route.profile),
+      ),
+    if (controller.selectedRoute != null)
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+        child: FilledButton.icon(
+          onPressed: startingNavigation ? null : onGo,
+          icon: startingNavigation
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.navigation),
+          label: Text(startingNavigation ? 'Getting your location…' : 'Go'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
     Padding(
       padding: const EdgeInsets.all(16),

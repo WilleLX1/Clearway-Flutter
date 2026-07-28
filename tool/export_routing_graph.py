@@ -85,6 +85,11 @@ def main() -> None:
     place_accumulator: dict[str, list] = {}
     edge_tuples = list(rg.G.edges(keys=True))
     for eid in range(rg.n_edges):
+        u, v, key = edge_tuples[eid]
+        raw_names = rg.G.edges[u, v, key].get("name")
+        names = raw_names if isinstance(raw_names, list) else [raw_names]
+        clean_names = [str(name).strip() for name in names if name]
+        edge_name = " / ".join(dict.fromkeys(clean_names))
         flat_coords = [
             coordinate
             for point in rg.e_coords[eid]
@@ -101,11 +106,9 @@ def main() -> None:
                 float(rg.e_arr_bearing[eid]),
                 encode_rule(rg.e_rule[eid], rules, rule_ids),
                 flat_coords,
+                edge_name,
             ]
         )
-        u, v, key = edge_tuples[eid]
-        raw_names = rg.G.edges[u, v, key].get("name")
-        names = raw_names if isinstance(raw_names, list) else [raw_names]
         midpoint = rg.e_coords[eid][len(rg.e_coords[eid]) // 2]
         for raw_name in names:
             if not raw_name:

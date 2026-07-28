@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../navigation/navigation_screen.dart';
 import 'route_planner_controller.dart';
 import 'widgets/planner_panel.dart';
 import 'widgets/route_map_view.dart';
@@ -20,6 +21,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   final _destinationText = TextEditingController();
   String? _lastOriginLabel;
   String? _lastDestinationLabel;
+  bool _startingNavigation = false;
 
   @override
   void initState() {
@@ -49,6 +51,35 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
       _lastDestinationLabel = destinationLabel;
       _destinationText.text = destinationLabel ?? '';
     }
+  }
+
+  Future<void> _startNavigation() async {
+    if (_startingNavigation) return;
+    setState(() => _startingNavigation = true);
+    final route = await _controller.prepareNavigation();
+    if (!mounted) return;
+    setState(() => _startingNavigation = false);
+    final destination = _controller.destination;
+    if (route == null || destination == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _controller.locationError ??
+                'A route and current location are required to navigate.',
+          ),
+        ),
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => NavigationScreen(
+          controller: _controller,
+          initialRoute: route,
+          destination: destination,
+        ),
+      ),
+    );
   }
 
   @override
@@ -81,6 +112,8 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                     originText: _originText,
                     destinationText: _destinationText,
                     desktop: true,
+                    onGo: _startNavigation,
+                    startingNavigation: _startingNavigation,
                   ),
                 ),
                 Expanded(child: map),
@@ -103,6 +136,8 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                   destinationText: _destinationText,
                   desktop: false,
                   scrollController: scrollController,
+                  onGo: _startNavigation,
+                  startingNavigation: _startingNavigation,
                 ),
               ),
             ],

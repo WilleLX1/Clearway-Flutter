@@ -136,8 +136,40 @@ class _RouteMapViewState extends State<RouteMapView> {
             maxZoom: 19,
           ),
           if (polylines.isNotEmpty) PolylineLayer(polylines: polylines),
+          if (planner.currentLocation != null)
+            CircleLayer(
+              circles: [
+                CircleMarker(
+                  point: _latLng(planner.currentLocation!.point),
+                  radius: planner.currentLocation!.accuracyM.clamp(6, 100),
+                  useRadiusInMeter: true,
+                  color: ClearwayColors.blue.withValues(alpha: 0.10),
+                  borderColor: ClearwayColors.blue.withValues(alpha: 0.25),
+                  borderStrokeWidth: 1,
+                ),
+              ],
+            ),
           MarkerLayer(markers: _markers(planner)),
-          _MapControls(mapController: _mapController),
+          _MapControls(
+            mapController: _mapController,
+            locating: planner.locating,
+            onLocate: () async {
+              final sample = await planner.locate();
+              if (!context.mounted) return;
+              if (sample != null) {
+                _mapController.move(_latLng(sample.point), 16);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      planner.locationError ??
+                          'Could not determine your location.',
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
           const _Attribution(),
         ],
       ),
@@ -148,6 +180,17 @@ class _RouteMapViewState extends State<RouteMapView> {
     final markers = <Marker>[];
     final origin = planner.origin;
     final destination = planner.destination;
+    final current = planner.currentLocation;
+    if (current != null) {
+      markers.add(
+        Marker(
+          point: _latLng(current.point),
+          width: 32,
+          height: 32,
+          child: const _CurrentLocationMarker(),
+        ),
+      );
+    }
     if (origin != null) {
       markers.add(
         Marker(
@@ -234,6 +277,26 @@ class _OriginMarker extends StatelessWidget {
   }
 }
 
+class _CurrentLocationMarker extends StatelessWidget {
+  const _CurrentLocationMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 18,
+        height: 18,
+        decoration: BoxDecoration(
+          color: ClearwayColors.blue,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: const [BoxShadow(color: Color(0x44000000), blurRadius: 5)],
+        ),
+      ),
+    );
+  }
+}
+
 class _EtaBubble extends StatelessWidget {
   const _EtaBubble({
     required this.route,
@@ -288,41 +351,67 @@ class _EtaBubble extends StatelessWidget {
 }
 
 class _MapControls extends StatelessWidget {
-  const _MapControls({required this.mapController});
+  const _MapControls({
+    required this.mapController,
+    required this.onLocate,
+    required this.locating,
+  });
 
   final MapController mapController;
+  final VoidCallback onLocate;
+  final bool locating;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
       right: 16,
       top: 16,
-      child: Material(
-        elevation: 3,
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: [
-            IconButton(
-              tooltip: 'Zoom in',
-              onPressed: () => mapController.move(
-                mapController.camera.center,
-                mapController.camera.zoom + 1,
-              ),
-              icon: const Icon(Icons.add),
+      child: Column(
+        children: [
+          Material(
+            elevation: 3,
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                IconButton(
+                  tooltip: 'Zoom in',
+                  onPressed: () => mapController.move(
+                    mapController.camera.center,
+                    mapController.camera.zoom + 1,
+                  ),
+                  icon: const Icon(Icons.add),
+                ),
+                const SizedBox(width: 40, child: Divider(height: 1)),
+                IconButton(
+                  tooltip: 'Zoom out',
+                  onPressed: () => mapController.move(
+                    mapController.camera.center,
+                    mapController.camera.zoom - 1,
+                  ),
+                  icon: const Icon(Icons.remove),
+                ),
+              ],
             ),
-            const SizedBox(width: 40, child: Divider(height: 1)),
-            IconButton(
-              tooltip: 'Zoom out',
-              onPressed: () => mapController.move(
-                mapController.camera.center,
-                mapController.camera.zoom - 1,
-              ),
-              icon: const Icon(Icons.remove),
+          ),
+          const SizedBox(height: 10),
+          Material(
+            elevation: 3,
+            color: Colors.white,
+            shape: const CircleBorder(),
+            child: IconButton(
+              tooltip: 'Show my location',
+              onPressed: locating ? null : onLocate,
+              icon: locating
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.my_location),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
