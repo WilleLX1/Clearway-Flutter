@@ -60,6 +60,7 @@ flutter:
 
   assets:
     - assets/routing/helsingborg.graph.json
+    - assets/search/helsingborg.places.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:

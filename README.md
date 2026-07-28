@@ -13,7 +13,8 @@ needed at runtime.
 - On-device Fastest and Clearway routing using edge-expanded A*
 - Traffic-light, stop-sign, crossing, U-turn, and roundabout costs
 - Day and departure-time handling for restricted roads
-- Offline street-name search for the bundled Helsingborg region
+- Offline autocomplete for house-number addresses, businesses, POIs, and
+  street names in the bundled Helsingborg region
 - Interactive OpenStreetMap, route lines, pins, statistics, and ETA callouts
 - Current-location display and high-accuracy foreground location tracking
 - On-device turn-by-turn navigation with road-name maneuvers and live ETA
@@ -85,6 +86,22 @@ This regenerates:
 The golden routes are produced by the original Python engine and used to prove
 that the Dart engine selects the same snapped nodes, exact edge paths, and
 route statistics.
+
+Refresh the separate offline address and business index with:
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE = "1"
+C:\projects\_other\Clearway\.venv\Scripts\python.exe `
+  .\tool\export_place_index.py
+```
+
+This downloads public OpenStreetMap address and named-POI records in small
+municipality tiles and writes `assets/search/helsingborg.places.json`.
+Overpass is used only during development; autocomplete remains entirely local
+at runtime. The checked-in snapshot contains 32,921 unique house-number
+addresses and 1,658 named businesses/POIs. The generated data is derived from
+[OpenStreetMap](https://www.openstreetmap.org/copyright) and is subject to the
+Open Database License.
 
 ## Verify
 

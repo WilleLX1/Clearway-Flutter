@@ -339,7 +339,7 @@ class _TripFields extends StatelessWidget {
             children: [
               _AddressField(
                 controller: originText,
-                hint: 'Choose starting point, or click on the map',
+                hint: 'Starting address, business, or map point',
                 searching: controller.searchingOrigin,
                 results: controller.originResults,
                 onChanged: (value) =>
@@ -350,7 +350,7 @@ class _TripFields extends StatelessWidget {
               const SizedBox(height: 8),
               _AddressField(
                 controller: destinationText,
-                hint: 'Choose destination, or click on the map',
+                hint: 'Destination address, business, or map point',
                 searching: controller.searchingDestination,
                 results: controller.destinationResults,
                 onChanged: (value) =>
@@ -439,10 +439,14 @@ class _AddressField extends StatelessWidget {
                       : '';
                   return ListTile(
                     dense: true,
-                    leading: const Icon(
-                      Icons.location_on_outlined,
+                    leading: Icon(
+                      switch (result.kind) {
+                        GeocodeResultKind.address => Icons.home_outlined,
+                        GeocodeResultKind.business => Icons.storefront_outlined,
+                        GeocodeResultKind.street => Icons.route_outlined,
+                      },
                       size: 19,
-                      color: Color(0xFF80868B),
+                      color: const Color(0xFF80868B),
                     ),
                     title: Text(
                       primary,

@@ -51,20 +51,25 @@ class GeocodeResult {
     required this.label,
     required this.lat,
     required this.lon,
+    this.kind = GeocodeResultKind.street,
   });
 
   factory GeocodeResult.fromJson(Map<String, dynamic> json) => GeocodeResult(
     label: json['label'] as String,
     lat: (json['lat'] as num).toDouble(),
     lon: (json['lon'] as num).toDouble(),
+    kind: GeocodeResultKind.street,
   );
 
   final String label;
   final double lat;
   final double lon;
+  final GeocodeResultKind kind;
 
   ClearwayPoint toPoint() => ClearwayPoint(lat: lat, lon: lon, label: label);
 }
+
+enum GeocodeResultKind { street, address, business }
 
 class RouteStats {
   const RouteStats({
